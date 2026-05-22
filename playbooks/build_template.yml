@@ -1,0 +1,7 @@
+---
+- name: Build the DGX OS VM template via autoinstall
+  hosts: proxmox
+  gather_facts: true
+  roles:
+    - role: zelos.dgx_proxmox_test_vm.dgx_os_iso
+    - role: zelos.dgx_proxmox_test_vm.vm_template_build

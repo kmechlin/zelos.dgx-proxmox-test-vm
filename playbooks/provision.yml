@@ -1,0 +1,6 @@
+---
+- name: Provision the active test VM from the template and snapshot 'fresh'
+  hosts: proxmox
+  gather_facts: false
+  roles:
+    - role: zelos.dgx_proxmox_test_vm.vm_provision

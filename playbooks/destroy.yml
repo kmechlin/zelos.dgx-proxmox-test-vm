@@ -1,0 +1,6 @@
+---
+- name: Stop and delete the active test VM
+  hosts: proxmox
+  gather_facts: false
+  roles:
+    - role: zelos.dgx_proxmox_test_vm.vm_destroy
