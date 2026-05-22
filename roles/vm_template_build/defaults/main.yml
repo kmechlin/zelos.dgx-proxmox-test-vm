@@ -1,0 +1,9 @@
+---
+# Template VM defaults. Most operator knobs live in
+# inventory/group_vars/all/main.yml; the ones below are role-internal
+# and rarely overridden.
+
+seed_iso_dir: "{{ proxmox_iso_storage_path }}"
+seed_iso_filename: "{{ vm_name }}-seed.iso"
+seed_iso_volid: "{{ proxmox_iso_storage }}:iso/{{ seed_iso_filename }}"
+seed_iso_tmpdir: "/tmp/zptv-seed-{{ vm_name }}"

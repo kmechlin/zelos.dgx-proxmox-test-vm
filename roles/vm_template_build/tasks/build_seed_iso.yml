@@ -1,0 +1,54 @@
+---
+- name: Ensure genisoimage is installed on the Proxmox node
+  ansible.builtin.apt:
+    name: genisoimage
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Create temporary seed directory on the node
+  ansible.builtin.file:
+    path: "{{ seed_iso_tmpdir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Render NoCloud user-data
+  ansible.builtin.template:
+    src: user-data.j2
+    dest: "{{ seed_iso_tmpdir }}/user-data"
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Render NoCloud meta-data
+  ansible.builtin.template:
+    src: meta-data.j2
+    dest: "{{ seed_iso_tmpdir }}/meta-data"
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Render NoCloud network-config
+  ansible.builtin.template:
+    src: network-config.j2
+    dest: "{{ seed_iso_tmpdir }}/network-config"
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Build the CIDATA seed ISO
+  ansible.builtin.command:
+    cmd: >-
+      genisoimage -output {{ seed_iso_dir }}/{{ seed_iso_filename }}
+      -volid CIDATA -joliet -rock
+      user-data meta-data network-config
+    chdir: "{{ seed_iso_tmpdir }}"
+  args:
+    creates: "{{ seed_iso_dir }}/{{ seed_iso_filename }}"
+
+- name: Remove temporary seed directory
+  ansible.builtin.file:
+    path: "{{ seed_iso_tmpdir }}"
+    state: absent

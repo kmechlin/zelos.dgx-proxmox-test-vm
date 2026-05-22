@@ -1,0 +1,47 @@
+---
+- name: Create the template VM
+  community.general.proxmox_kvm:
+    api_host: "{{ proxmox_api_host }}"
+    api_user: "{{ proxmox_api_user }}"
+    api_password: "{{ proxmox_api_password | default(omit) }}"
+    api_token_id: "{{ proxmox_api_token_id | default(omit) }}"
+    api_token_secret: "{{ proxmox_api_token_secret | default(omit) }}"
+    validate_certs: "{{ proxmox_validate_certs }}"
+    node: "{{ proxmox_node }}"
+    vmid: "{{ proxmox_template_vmid }}"
+    name: "{{ template_vm_name }}"
+    machine: "{{ template_machine }}"
+    bios: "{{ template_bios }}"
+    scsihw: "{{ template_scsihw }}"
+    cores: "{{ template_cores }}"
+    memory: "{{ template_memory_mb }}"
+    net:
+      net0: "virtio,bridge={{ template_net_bridge }}"
+    scsi:
+      scsi0: "{{ proxmox_storage }}:{{ template_disk_size | regex_replace('G$', '') }},format=raw"
+    ide:
+      ide2: "{{ dgx_os_iso }},media=cdrom"
+      ide3: "{{ seed_iso_volid }},media=cdrom"
+    efidisk0:
+      storage: "{{ template_efidisk_storage }}"
+      format: raw
+      efitype: "4m"
+      pre_enrolled_keys: false
+    boot: "order=ide2;ide3;scsi0"
+    ostype: "l26"
+    agent: true
+    state: present
+  delegate_to: localhost
+
+- name: Start the template VM to begin autoinstall
+  community.general.proxmox_kvm:
+    api_host: "{{ proxmox_api_host }}"
+    api_user: "{{ proxmox_api_user }}"
+    api_password: "{{ proxmox_api_password | default(omit) }}"
+    api_token_id: "{{ proxmox_api_token_id | default(omit) }}"
+    api_token_secret: "{{ proxmox_api_token_secret | default(omit) }}"
+    validate_certs: "{{ proxmox_validate_certs }}"
+    node: "{{ proxmox_node }}"
+    vmid: "{{ proxmox_template_vmid }}"
+    state: started
+  delegate_to: localhost
