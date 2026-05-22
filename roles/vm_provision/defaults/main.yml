@@ -1,0 +1,6 @@
+---
+# Snapshot taken immediately after the active VM comes up.
+vm_snapshot_name: "fresh"
+vm_snapshot_description: "Post-install baseline for zelos.dgx"
+vm_provision_ssh_timeout: 600
+vm_provision_ssh_delay: 10

@@ -1,0 +1,4 @@
+---
+vm_snapshot_name: "fresh"
+vm_reset_ssh_timeout: 600
+vm_reset_ssh_delay: 5
