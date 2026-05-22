@@ -8,7 +8,7 @@
 
 - name: Create temporary seed directory on the node
   ansible.builtin.file:
-    path: "{{ seed_iso_tmpdir }}"
+    path: "{{ vm_template_build_seed_iso_tmpdir }}"
     state: directory
     owner: root
     group: root
@@ -17,7 +17,7 @@
 - name: Render NoCloud user-data
   ansible.builtin.template:
     src: user-data.j2
-    dest: "{{ seed_iso_tmpdir }}/user-data"
+    dest: "{{ vm_template_build_seed_iso_tmpdir }}/user-data"
     owner: root
     group: root
     mode: '0644'
@@ -25,7 +25,7 @@
 - name: Render NoCloud meta-data
   ansible.builtin.template:
     src: meta-data.j2
-    dest: "{{ seed_iso_tmpdir }}/meta-data"
+    dest: "{{ vm_template_build_seed_iso_tmpdir }}/meta-data"
     owner: root
     group: root
     mode: '0644'
@@ -33,7 +33,7 @@
 - name: Render NoCloud network-config
   ansible.builtin.template:
     src: network-config.j2
-    dest: "{{ seed_iso_tmpdir }}/network-config"
+    dest: "{{ vm_template_build_seed_iso_tmpdir }}/network-config"
     owner: root
     group: root
     mode: '0644'
@@ -41,14 +41,14 @@
 - name: Build the CIDATA seed ISO
   ansible.builtin.command:
     cmd: >-
-      genisoimage -output {{ seed_iso_dir }}/{{ seed_iso_filename }}
+      genisoimage -output {{ vm_template_build_seed_iso_dir }}/{{ vm_template_build_seed_iso_filename }}
       -volid CIDATA -joliet -rock
       user-data meta-data network-config
-    chdir: "{{ seed_iso_tmpdir }}"
+    chdir: "{{ vm_template_build_seed_iso_tmpdir }}"
   args:
-    creates: "{{ seed_iso_dir }}/{{ seed_iso_filename }}"
+    creates: "{{ vm_template_build_seed_iso_dir }}/{{ vm_template_build_seed_iso_filename }}"
 
 - name: Remove temporary seed directory
   ansible.builtin.file:
-    path: "{{ seed_iso_tmpdir }}"
+    path: "{{ vm_template_build_seed_iso_tmpdir }}"
     state: absent

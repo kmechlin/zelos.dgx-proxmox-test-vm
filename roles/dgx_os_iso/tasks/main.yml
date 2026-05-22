@@ -11,47 +11,47 @@
 
 - name: Parse dgx_os_iso into storage + filename
   ansible.builtin.set_fact:
-    iso_storage: "{{ dgx_os_iso.split(':', 1)[0] }}"
-    iso_filename: "{{ dgx_os_iso.split('/', 1)[1] }}"
+    dgx_os_iso_storage: "{{ dgx_os_iso.split(':', 1)[0] }}"
+    dgx_os_iso_filename: "{{ dgx_os_iso.split('/', 1)[1] }}"
 
 - name: Assert iso storage matches proxmox_iso_storage
   ansible.builtin.assert:
     that:
-      - iso_storage == proxmox_iso_storage
+      - dgx_os_iso_storage == proxmox_iso_storage
     fail_msg: >-
-      dgx_os_iso storage ({{ iso_storage }}) does not match
+      dgx_os_iso storage ({{ dgx_os_iso_storage }}) does not match
       proxmox_iso_storage ({{ proxmox_iso_storage }}). Set them
       consistently in inventory/group_vars/all/main.yml.
 
 - name: Compute destination path on the Proxmox node
   ansible.builtin.set_fact:
-    iso_dest_path: "{{ proxmox_iso_storage_path }}/{{ iso_filename }}"
+    dgx_os_iso_dest_path: "{{ proxmox_iso_storage_path }}/{{ dgx_os_iso_filename }}"
 
 - name: Check whether the ISO is already on the Proxmox node
   ansible.builtin.stat:
-    path: "{{ iso_dest_path }}"
-  register: iso_stat
+    path: "{{ dgx_os_iso_dest_path }}"
+  register: dgx_os_iso_stat
 
 - name: ISO already present - verify checksum if provided
   ansible.builtin.stat:
-    path: "{{ iso_dest_path }}"
+    path: "{{ dgx_os_iso_dest_path }}"
     checksum_algorithm: sha256
-  register: iso_checksum
+  register: dgx_os_iso_existing_checksum
   when:
-    - iso_stat.stat.exists
+    - dgx_os_iso_stat.stat.exists
     - dgx_os_iso_sha256 | length > 0
 
 - name: Fail if existing ISO checksum mismatches
   ansible.builtin.fail:
     msg: >-
-      ISO at {{ iso_dest_path }} has sha256
-      {{ iso_checksum.stat.checksum }} but dgx_os_iso_sha256 was set to
-      {{ dgx_os_iso_sha256 }}. Either fix the expected hash or replace
-      the file.
+      ISO at {{ dgx_os_iso_dest_path }} has sha256
+      {{ dgx_os_iso_existing_checksum.stat.checksum }} but
+      dgx_os_iso_sha256 was set to {{ dgx_os_iso_sha256 }}. Either fix
+      the expected hash or replace the file.
   when:
-    - iso_stat.stat.exists
+    - dgx_os_iso_stat.stat.exists
     - dgx_os_iso_sha256 | length > 0
-    - iso_checksum.stat.checksum != dgx_os_iso_sha256
+    - dgx_os_iso_existing_checksum.stat.checksum != dgx_os_iso_sha256
 
 - name: Validate a source is configured if ISO is missing
   ansible.builtin.fail:
@@ -66,7 +66,7 @@
       The DGX OS ISO itself requires an NVIDIA Enterprise Support
       entitlement; see docs/dgx-os-install.md.
   when:
-    - not iso_stat.stat.exists
+    - not dgx_os_iso_stat.stat.exists
     - (dgx_os_iso_local_source | length == 0)
     - (dgx_os_iso_url | length == 0)
 
@@ -77,24 +77,24 @@
     owner: root
     group: root
     mode: '0755'
-  when: not iso_stat.stat.exists
+  when: not dgx_os_iso_stat.stat.exists
 
 - name: Upload ISO from control node (source A)
   ansible.builtin.copy:
     src: "{{ dgx_os_iso_local_source }}"
-    dest: "{{ iso_dest_path }}"
+    dest: "{{ dgx_os_iso_dest_path }}"
     owner: root
     group: root
     mode: '0644'
     checksum: "{{ dgx_os_iso_sha256 if dgx_os_iso_sha256 | length > 0 else omit }}"
   when:
-    - not iso_stat.stat.exists
+    - not dgx_os_iso_stat.stat.exists
     - dgx_os_iso_local_source | length > 0
 
 - name: Download ISO to Proxmox node (source B)
   ansible.builtin.get_url:
     url: "{{ dgx_os_iso_url }}"
-    dest: "{{ iso_dest_path }}"
+    dest: "{{ dgx_os_iso_dest_path }}"
     headers: "{{ dgx_os_iso_url_headers }}"
     checksum: "{{ ('sha256:' ~ dgx_os_iso_sha256) if dgx_os_iso_sha256 | length > 0 else omit }}"
     timeout: 3600
@@ -103,17 +103,17 @@
     group: root
     mode: '0644'
   when:
-    - not iso_stat.stat.exists
+    - not dgx_os_iso_stat.stat.exists
     - dgx_os_iso_local_source | length == 0
     - dgx_os_iso_url | length > 0
 
 - name: Confirm ISO is now present
   ansible.builtin.stat:
-    path: "{{ iso_dest_path }}"
-  register: iso_stat_final
+    path: "{{ dgx_os_iso_dest_path }}"
+  register: dgx_os_iso_stat_final
 
 - name: Assert ISO landed
   ansible.builtin.assert:
     that:
-      - iso_stat_final.stat.exists
-    fail_msg: "Failed to materialise DGX OS ISO at {{ iso_dest_path }}."
+      - dgx_os_iso_stat_final.stat.exists
+    fail_msg: "Failed to materialise DGX OS ISO at {{ dgx_os_iso_dest_path }}."

@@ -21,7 +21,7 @@
       scsi0: "{{ proxmox_storage }}:{{ template_disk_size | regex_replace('G$', '') }},format=raw"
     ide:
       ide2: "{{ dgx_os_iso }},media=cdrom"
-      ide3: "{{ seed_iso_volid }},media=cdrom"
+      ide3: "{{ vm_template_build_seed_iso_volid }},media=cdrom"
     efidisk0:
       storage: "{{ template_efidisk_storage }}"
       format: raw

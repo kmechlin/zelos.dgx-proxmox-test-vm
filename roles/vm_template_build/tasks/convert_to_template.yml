@@ -45,5 +45,5 @@
 
 - name: Remove the per-build seed ISO from node storage
   ansible.builtin.file:
-    path: "{{ seed_iso_dir }}/{{ seed_iso_filename }}"
+    path: "{{ vm_template_build_seed_iso_dir }}/{{ vm_template_build_seed_iso_filename }}"
     state: absent

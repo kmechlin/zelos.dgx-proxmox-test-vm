@@ -6,9 +6,9 @@
 #   3. dgx_os_iso_url set (fetch directly to node, supports
 #      entitlement-auth headers via dgx_os_iso_url_headers)
 #   4. fail with an actionable error
-
-# Required: Proxmox volid (<storage>:iso/<filename>).
-dgx_os_iso: ""
+#
+# Operator-facing knobs (dgx_os_iso, proxmox_iso_storage,
+# proxmox_iso_storage_path) live in inventory/group_vars/all/main.yml.
 
 # Optional sources. At least one of these (or a pre-staged ISO) must
 # resolve.
@@ -18,7 +18,3 @@ dgx_os_iso_url_headers: {}
 
 # Recommended: sha256 to verify after upload / download.
 dgx_os_iso_sha256: ""
-
-# Maps proxmox_iso_storage to a filesystem mountpoint on the node.
-proxmox_iso_storage: "local"
-proxmox_iso_storage_path: "/var/lib/vz/template/iso"

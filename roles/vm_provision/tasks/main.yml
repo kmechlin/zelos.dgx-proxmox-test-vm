@@ -9,14 +9,14 @@
     validate_certs: "{{ proxmox_validate_certs }}"
     node: "{{ proxmox_node }}"
     vmid: "{{ proxmox_vmid }}"
-  register: active_vm_state
+  register: vm_provision_active_vm_state
   failed_when: false
   delegate_to: localhost
   run_once: true
 
 - name: Set fact - active VM exists?
   ansible.builtin.set_fact:
-    active_vm_exists: "{{ (active_vm_state.proxmox_vms | default([]) | length) > 0 }}"
+    vm_provision_active_vm_exists: "{{ (vm_provision_active_vm_state.proxmox_vms | default([]) | length) > 0 }}"
 
 - name: Clone template into the active test VM
   community.general.proxmox_kvm:
@@ -35,7 +35,7 @@
     storage: "{{ proxmox_storage }}"
     timeout: 1800
   delegate_to: localhost
-  when: not active_vm_exists
+  when: not vm_provision_active_vm_exists
 
 - name: Attach GPU passthrough (PCIe + audio function)
   community.general.proxmox_kvm:
@@ -86,6 +86,6 @@
     node: "{{ proxmox_node }}"
     vmid: "{{ proxmox_vmid }}"
     snapname: "{{ vm_snapshot_name }}"
-    description: "{{ vm_snapshot_description }}"
+    description: "{{ vm_provision_snapshot_description }}"
     state: present
   delegate_to: localhost

@@ -1,6 +1,6 @@
 ---
-# CPU family. Drives the IOMMU kernel cmdline arg.
-proxmox_host_cpu_vendor: "intel"   # "intel" or "amd"
+# Operator-facing knob (proxmox_host_cpu_vendor) lives in
+# inventory/group_vars/all/main.yml.
 
 # vendor:device IDs to bind to vfio-pci.
 proxmox_host_vfio_ids: []

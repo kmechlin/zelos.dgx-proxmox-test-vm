@@ -8,20 +8,20 @@
     status_code: 200
     headers:
       Authorization: "PVEAPIToken={{ proxmox_api_user }}!{{ proxmox_api_token_id }}={{ proxmox_api_token_secret }}"
-  register: snap_list
+  register: vm_reset_snap_list
   delegate_to: localhost
   when: proxmox_api_token_id | length > 0
 
 - name: Assert snapshot is present
   ansible.builtin.assert:
     that:
-      - vm_snapshot_name in (snap_list.json.data | map(attribute='name') | list)
+      - vm_snapshot_name in (vm_reset_snap_list.json.data | map(attribute='name') | list)
     fail_msg: >-
       Snapshot '{{ vm_snapshot_name }}' does not exist on VM
       {{ proxmox_vmid }}. Run `zptv provision` first.
   when:
-    - snap_list is defined
-    - snap_list.json is defined
+    - vm_reset_snap_list is defined
+    - vm_reset_snap_list.json is defined
 
 - name: Stop the test VM
   community.general.proxmox_kvm:
