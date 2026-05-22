@@ -1,0 +1,10 @@
+---
+# proxmox_preflight asserts the operator's Proxmox node is reachable
+# over the API and that the target GPU is currently bound to vfio-pci.
+# It also pulls in the proxmox_host_vfio role so a fresh node is
+# configured end-to-end from a single `zptv preflight` call.
+
+# Whether to skip the post-condition vfio-pci binding check. Useful
+# right after first configuring vfio-pci on the host (before reboot),
+# where the post-condition would otherwise fail until next boot.
+proxmox_preflight_skip_vfio_check: false

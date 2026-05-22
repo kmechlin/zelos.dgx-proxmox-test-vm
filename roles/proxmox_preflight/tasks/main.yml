@@ -1,0 +1,51 @@
+---
+- name: Confirm Proxmox API reachability
+  ansible.builtin.uri:
+    url: "https://{{ proxmox_api_host }}:8006/api2/json/version"
+    method: GET
+    validate_certs: "{{ proxmox_validate_certs }}"
+    return_content: true
+    status_code: 200
+    headers: "{{ _proxmox_api_headers }}"
+  vars:
+    _proxmox_api_headers: >-
+      {{
+        {'Authorization': 'PVEAPIToken=' ~ proxmox_api_user ~ '!' ~ proxmox_api_token_id ~ '=' ~ proxmox_api_token_secret}
+        if (proxmox_api_token_id | length > 0)
+        else {}
+      }}
+  delegate_to: localhost
+  run_once: true
+  register: proxmox_api_version
+  when: proxmox_api_token_id | length > 0
+
+- name: Show Proxmox API version
+  ansible.builtin.debug:
+    msg: "Proxmox API responded: {{ proxmox_api_version.json | default('(skipped - no token; relying on proxmoxer with password)') }}"
+  when: proxmox_api_version is defined and proxmox_api_version.json is defined
+
+- name: Configure vfio-pci on the Proxmox host
+  ansible.builtin.include_role:
+    name: zelos.dgx_proxmox_test_vm.proxmox_host_vfio
+
+- name: Read current driver binding for target GPU
+  ansible.builtin.command:
+    cmd: "lspci -k -s {{ gpu_pci_address }}"
+  register: gpu_lspci
+  changed_when: false
+  failed_when: false
+  when: not proxmox_preflight_skip_vfio_check
+
+- name: Assert target GPU is bound to vfio-pci
+  ansible.builtin.assert:
+    that:
+      - "'Kernel driver in use: vfio-pci' in gpu_lspci.stdout"
+    fail_msg: >-
+      GPU at {{ gpu_pci_address }} is not bound to vfio-pci.
+      Re-run preflight with -e proxmox_host_vfio_allow_reboot=true,
+      then reboot the Proxmox host so the new modprobe + cmdline
+      take effect. Current lspci output:
+      {{ gpu_lspci.stdout | default('(no output)') }}
+  when:
+    - not proxmox_preflight_skip_vfio_check
+    - gpu_lspci is defined

@@ -1,0 +1,134 @@
+---
+- name: Validate CPU vendor input
+  ansible.builtin.assert:
+    that:
+      - proxmox_host_cpu_vendor in ['intel', 'amd']
+    fail_msg: "proxmox_host_cpu_vendor must be 'intel' or 'amd' (got: {{ proxmox_host_cpu_vendor }})"
+
+- name: Validate vfio IDs are present
+  ansible.builtin.assert:
+    that:
+      - proxmox_host_vfio_ids | length > 0
+    fail_msg: >-
+      proxmox_host_vfio_ids is empty. Set it to the vendor:device IDs of
+      the GPU (and its audio function) on this Proxmox host. Find them
+      with `lspci -nn | grep -i nvidia`.
+
+- name: Detect bootloader (systemd-boot vs GRUB)
+  ansible.builtin.stat:
+    path: /etc/kernel/proxmox-boot-uuids
+  register: proxmox_boot_uuids
+
+- name: Set bootloader fact
+  ansible.builtin.set_fact:
+    proxmox_host_vfio_bootloader: "{{ 'systemd-boot' if proxmox_boot_uuids.stat.exists else 'grub' }}"
+
+- name: Ensure IOMMU is on the kernel cmdline (systemd-boot)
+  ansible.builtin.lineinfile:
+    path: /etc/kernel/cmdline
+    backrefs: true
+    regexp: '^(?!.*\b{{ proxmox_host_cpu_vendor }}_iommu=on\b)(.*)$'
+    line: '\1 {{ proxmox_host_cpu_vendor }}_iommu=on iommu=pt'
+    state: present
+  register: cmdline_systemd_boot
+  when: proxmox_host_vfio_bootloader == 'systemd-boot'
+
+- name: Ensure IOMMU is on GRUB_CMDLINE_LINUX_DEFAULT (GRUB)
+  ansible.builtin.replace:
+    path: /etc/default/grub
+    regexp: '^(GRUB_CMDLINE_LINUX_DEFAULT="(?!.*\b{{ proxmox_host_cpu_vendor }}_iommu=on\b)[^"]*)"'
+    replace: '\1 {{ proxmox_host_cpu_vendor }}_iommu=on iommu=pt"'
+  register: cmdline_grub
+  when: proxmox_host_vfio_bootloader == 'grub'
+
+- name: Ensure vfio modules load at boot
+  ansible.builtin.lineinfile:
+    path: /etc/modules
+    line: "{{ item }}"
+    state: present
+    create: true
+    mode: '0644'
+  loop: "{{ proxmox_host_vfio_modules }}"
+  register: modules_lineinfile
+
+- name: Write vfio-pci options (PCI IDs to bind)
+  ansible.builtin.copy:
+    dest: /etc/modprobe.d/vfio.conf
+    owner: root
+    group: root
+    mode: '0644'
+    content: |
+      # Managed by zelos.dgx_proxmox_test_vm.proxmox_host_vfio
+      options vfio-pci ids={{ proxmox_host_vfio_ids | join(',') }}
+      {% for driver in proxmox_host_vfio_blacklist %}
+      softdep {{ driver }} pre: vfio-pci
+      {% endfor %}
+  register: vfio_conf
+
+- name: Write blacklist for conflicting GPU drivers
+  ansible.builtin.copy:
+    dest: /etc/modprobe.d/blacklist-gpu.conf
+    owner: root
+    group: root
+    mode: '0644'
+    content: |
+      # Managed by zelos.dgx_proxmox_test_vm.proxmox_host_vfio
+      {% for driver in proxmox_host_vfio_blacklist %}
+      blacklist {{ driver }}
+      {% endfor %}
+  register: blacklist_conf
+
+- name: Refresh boot config (systemd-boot)
+  ansible.builtin.command:
+    cmd: proxmox-boot-tool refresh
+  when:
+    - proxmox_host_vfio_bootloader == 'systemd-boot'
+    - cmdline_systemd_boot is changed
+  changed_when: true
+
+- name: Refresh boot config (GRUB)
+  ansible.builtin.command:
+    cmd: update-grub
+  when:
+    - proxmox_host_vfio_bootloader == 'grub'
+    - cmdline_grub is changed
+  changed_when: true
+
+- name: Rebuild initramfs
+  ansible.builtin.command:
+    cmd: update-initramfs -u -k all
+  when: >-
+    (cmdline_systemd_boot is defined and cmdline_systemd_boot is changed)
+    or (cmdline_grub is defined and cmdline_grub is changed)
+    or (modules_lineinfile is changed)
+    or (vfio_conf is changed)
+    or (blacklist_conf is changed)
+  changed_when: true
+
+- name: Compute reboot-required fact
+  ansible.builtin.set_fact:
+    proxmox_host_vfio_reboot_required: >-
+      {{
+        (cmdline_systemd_boot is defined and cmdline_systemd_boot is changed)
+        or (cmdline_grub is defined and cmdline_grub is changed)
+        or (modules_lineinfile is changed)
+        or (vfio_conf is changed)
+        or (blacklist_conf is changed)
+      }}
+
+- name: Reboot the Proxmox host (opt-in)
+  ansible.builtin.reboot:
+    reboot_timeout: 600
+  when:
+    - proxmox_host_vfio_reboot_required | bool
+    - proxmox_host_vfio_allow_reboot | bool
+
+- name: Warn that a reboot is required
+  ansible.builtin.debug:
+    msg: >-
+      vfio-pci configuration changed but proxmox_host_vfio_allow_reboot
+      is false. Reboot the Proxmox host before running `zptv provision`
+      or set proxmox_host_vfio_allow_reboot=true on a re-run.
+  when:
+    - proxmox_host_vfio_reboot_required | bool
+    - not (proxmox_host_vfio_allow_reboot | bool)
