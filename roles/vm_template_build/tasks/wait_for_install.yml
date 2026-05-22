@@ -1,0 +1,19 @@
+---
+- name: Wait for SSH on the installing VM
+  ansible.builtin.wait_for:
+    host: "{{ vm_ip }}"
+    port: 22
+    delay: "{{ install_ssh_delay }}"
+    timeout: "{{ install_ssh_timeout }}"
+    state: started
+  delegate_to: localhost
+
+- name: Wait until ansible can connect to the VM as the admin user
+  ansible.builtin.wait_for_connection:
+    timeout: 120
+    delay: 5
+  vars:
+    ansible_host: "{{ vm_ip }}"
+    ansible_user: "{{ vm_admin_user }}"
+    ansible_connection: ssh
+  delegate_to: "{{ vm_ip }}"

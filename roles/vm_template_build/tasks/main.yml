@@ -1,0 +1,42 @@
+---
+- name: Short-circuit if the template VM is already present
+  community.general.proxmox_vm_info:
+    api_host: "{{ proxmox_api_host }}"
+    api_user: "{{ proxmox_api_user }}"
+    api_password: "{{ proxmox_api_password | default(omit) }}"
+    api_token_id: "{{ proxmox_api_token_id | default(omit) }}"
+    api_token_secret: "{{ proxmox_api_token_secret | default(omit) }}"
+    validate_certs: "{{ proxmox_validate_certs }}"
+    node: "{{ proxmox_node }}"
+    vmid: "{{ proxmox_template_vmid }}"
+  register: vm_template_build_template_vm_state
+  failed_when: false
+  delegate_to: localhost
+  run_once: true
+
+- name: Determine whether build is needed
+  ansible.builtin.set_fact:
+    vm_template_build_needed: >-
+      {{ (vm_template_build_template_vm_state.proxmox_vms | default([]) | length == 0)
+         or (not (vm_template_build_template_vm_state.proxmox_vms[0].template | default(false))) }}
+
+- name: Build seed ISO from autoinstall templates
+  ansible.builtin.include_tasks: build_seed_iso.yml
+  when: vm_template_build_needed | bool
+
+- name: Create the template VM and start autoinstall
+  ansible.builtin.include_tasks: create_template.yml
+  when: vm_template_build_needed | bool
+
+- name: Wait for autoinstall to complete
+  ansible.builtin.include_tasks: wait_for_install.yml
+  when: vm_template_build_needed | bool
+
+- name: Convert the installed VM into a Proxmox template
+  ansible.builtin.include_tasks: convert_to_template.yml
+  when: vm_template_build_needed | bool
+
+- name: Report skipped build
+  ansible.builtin.debug:
+    msg: "Template VM {{ proxmox_template_vmid }} already exists and is a template. Skipping build."
+  when: not (vm_template_build_needed | bool)

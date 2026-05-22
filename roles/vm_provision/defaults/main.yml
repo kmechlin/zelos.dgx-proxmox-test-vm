@@ -1,0 +1,7 @@
+---
+# Operator-facing knob (vm_snapshot_name) lives in
+# inventory/group_vars/all/main.yml.
+
+vm_provision_snapshot_description: "Post-install baseline for zelos.dgx"
+vm_provision_ssh_timeout: 600
+vm_provision_ssh_delay: 10

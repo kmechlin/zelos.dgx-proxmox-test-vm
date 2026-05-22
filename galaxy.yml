@@ -1,0 +1,38 @@
+---
+namespace: zelos
+name: dgx_proxmox_test_vm
+version: 0.1.0
+readme: README.md
+authors:
+  - kmechlin
+description: >
+  Proxmox VM test target for the zelos.dgx collection. Builds, snapshots,
+  resets, and destroys a single DGX OS VM with GPU passthrough as a
+  repeatable baseline for zelos.dgx iteration.
+license:
+  - Apache-2.0
+tags:
+  - infrastructure
+  - linux
+  - nvidia
+  - dgx
+  - proxmox
+  - testing
+dependencies:
+  community.general: ">=8.0.0"
+repository: https://github.com/kmechlin/zelos.dgx-proxmox-test-vm
+issues: https://github.com/kmechlin/zelos.dgx-proxmox-test-vm/issues
+build_ignore:
+  - .github
+  - .yamllint.yml
+  - .gitignore
+  - venv
+  - .venv
+  - inventory
+  - cli
+  - pyproject.toml
+  - scripts
+  - "*.egg-info"
+  - Dockerfile
+  - Makefile
+  - docs

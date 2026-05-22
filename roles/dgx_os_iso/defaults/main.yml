@@ -1,0 +1,20 @@
+---
+# dgx_os_iso resolves the DGX OS ISO onto the Proxmox node's ISO
+# storage. Sources, in priority order:
+#   1. already on node at dgx_os_iso
+#   2. dgx_os_iso_local_source set (upload from control node)
+#   3. dgx_os_iso_url set (fetch directly to node, supports
+#      entitlement-auth headers via dgx_os_iso_url_headers)
+#   4. fail with an actionable error
+#
+# Operator-facing knobs (dgx_os_iso, proxmox_iso_storage,
+# proxmox_iso_storage_path) live in inventory/group_vars/all/main.yml.
+
+# Optional sources. At least one of these (or a pre-staged ISO) must
+# resolve.
+dgx_os_iso_local_source: ""
+dgx_os_iso_url: ""
+dgx_os_iso_url_headers: {}
+
+# Recommended: sha256 to verify after upload / download.
+dgx_os_iso_sha256: ""

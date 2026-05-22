@@ -1,0 +1,49 @@
+---
+# Copy to inventory/group_vars/all/vault.yml, then:
+#   ansible-vault encrypt inventory/group_vars/all/vault.yml
+# Edit with:
+#   ansible-vault edit inventory/group_vars/all/vault.yml
+
+# --- Proxmox API auth -------------------------------------------------
+# Use either a password OR an API token (token preferred for production).
+vault_proxmox_api_user: "root@pam"
+vault_proxmox_api_password: "REPLACE"
+vault_proxmox_api_token_id: ""
+vault_proxmox_api_token_secret: ""
+
+# --- DGX OS ISO -------------------------------------------------------
+# DGX OS ISO target on the Proxmox node's ISO storage. Format is the
+# Proxmox volid: <storage>:iso/<filename>. If the file is already there,
+# nothing else is needed. Otherwise one of the two sources below is
+# required.
+vault_dgx_os_iso: "local:iso/DGX_OS_7.x.iso"
+
+# Option A: absolute path on the CONTROL node to a local copy of the
+# DGX OS ISO. The dgx_os_iso role will upload it to the Proxmox node's
+# ISO storage. Leave empty to skip.
+vault_dgx_os_iso_local_source: ""
+
+# Option B: signed URL or NVIDIA Enterprise Support download URL the
+# Proxmox node can fetch directly. Leave empty to skip. If both A and B
+# are set, A wins.
+vault_dgx_os_iso_url: ""
+
+# HTTP headers used with vault_dgx_os_iso_url (e.g. for entitlement
+# auth). Pass as a YAML map; common form:
+#   vault_dgx_os_iso_url_headers:
+#     Authorization: "Bearer <token>"
+#     Cookie: "ngc_session=<session-id>"
+vault_dgx_os_iso_url_headers: {}
+
+# Expected SHA256 of the DGX OS ISO. The dgx_os_iso role verifies the
+# checksum after upload or download (skipped if empty, but recommended).
+vault_dgx_os_iso_sha256: ""
+
+# --- VM admin user ----------------------------------------------------
+# SSH pubkey embedded in the VM's autoinstall payload (authorized_keys
+# for the ubuntu user).
+vault_vm_ssh_pubkey: "ssh-ed25519 AAAA... operator@host"
+
+# Password hash for the ubuntu user inside the VM:
+#   mkpasswd -m sha-512
+vault_vm_ubuntu_password_hash: "$6$replace-with-a-real-sha512-crypt-hash"
