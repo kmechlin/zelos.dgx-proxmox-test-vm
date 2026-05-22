@@ -1,0 +1,16 @@
+---
+galaxy_info:
+  author: kmechlin
+  description: Configure IOMMU and vfio-pci on a Proxmox host for GPU passthrough
+  license: Apache-2.0
+  min_ansible_version: "2.15"
+  platforms:
+    - name: Debian
+      versions:
+        - bookworm
+  galaxy_tags:
+    - proxmox
+    - vfio
+    - iommu
+    - passthrough
+dependencies: []

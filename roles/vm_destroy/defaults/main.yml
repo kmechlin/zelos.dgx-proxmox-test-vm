@@ -1,0 +1,4 @@
+---
+# vm_destroy targets the active test VM only. The template is left
+# alone (re-building it is the expensive ~30-60 min operation).
+vm_destroy_force: true

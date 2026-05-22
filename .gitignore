@@ -1,0 +1,12 @@
+venv/
+.venv/
+*.pyc
+__pycache__/
+.ansible/
+collections/
+inventory/group_vars/all/vault.yml
+inventory/secrets.yml
+*.retry
+.idea/
+.vscode/
+.DS_Store

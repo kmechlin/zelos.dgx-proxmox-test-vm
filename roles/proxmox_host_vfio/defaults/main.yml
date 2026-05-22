@@ -1,0 +1,22 @@
+---
+# Operator-facing knob (proxmox_host_cpu_vendor) lives in
+# inventory/group_vars/all/main.yml.
+
+# vendor:device IDs to bind to vfio-pci.
+proxmox_host_vfio_ids: []
+
+# Drivers blacklisted on the Proxmox host.
+proxmox_host_vfio_blacklist:
+  - nouveau
+  - nvidia
+  - nvidiafb
+
+# vfio modules loaded at boot.
+proxmox_host_vfio_modules:
+  - vfio
+  - vfio_iommu_type1
+  - vfio_pci
+  - vfio_virqfd
+
+# Reboot the host automatically if cmdline / modules changed.
+proxmox_host_vfio_allow_reboot: false

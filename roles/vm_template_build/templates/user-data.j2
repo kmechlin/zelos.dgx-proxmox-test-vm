@@ -1,0 +1,63 @@
+#cloud-config
+# Ubuntu autoinstall (subiquity) for DGX OS {{ dgx_os_version }}.
+# Renders the operator's variables into the CHANGE_* slots from
+# NVIDIA's DGX OS user-guide sample. The installer reads this file from
+# a CIDATA-labelled CD-ROM (NoCloud datasource).
+autoinstall:
+  version: 1
+
+  locale: {{ vm_locale }}
+  keyboard:
+    layout: us
+
+  identity:
+    hostname: {{ vm_hostname }}
+    username: {{ vm_admin_user }}
+    password: "{{ vm_admin_password_hash }}"
+    realname: "{{ vm_admin_user }}"
+
+  ssh:
+    install-server: true
+    allow-pw: true
+    authorized-keys:
+      - "{{ vm_admin_pubkey }}"
+
+  network:
+    version: 2
+    ethernets:
+      enp0s18:
+        dhcp4: true
+
+  storage:
+    layout:
+      name: direct
+
+  timezone: {{ vm_timezone }}
+
+  updates: security
+
+  refresh-installer:
+    update: false
+
+  apt:
+    preserve_sources_list: true
+    geoip: true
+
+  packages:
+    - openssh-server
+    - qemu-guest-agent
+
+  user-data:
+    disable_root: false
+    runcmd:
+      - systemctl enable --now ssh
+      - systemctl enable --now qemu-guest-agent
+
+  late-commands:
+    # Make sure cloud-init doesn't try to re-personalize the VM on first
+    # boot off the installed disk (NoCloud seed ISO is still attached
+    # at this point and would otherwise be re-read).
+    - "curtin in-target --target=/target -- sh -c 'echo \"datasource_list: [ NoCloud, None ]\" > /etc/cloud/cloud.cfg.d/99_disable.cfg'"
+    - "curtin in-target --target=/target -- sh -c 'touch /etc/cloud/cloud-init.disabled'"
+
+  shutdown: reboot

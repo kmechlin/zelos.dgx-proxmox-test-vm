@@ -1,0 +1,6 @@
+---
+# Operator-facing knob (vm_snapshot_name) lives in
+# inventory/group_vars/all/main.yml.
+
+vm_reset_ssh_timeout: 600
+vm_reset_ssh_delay: 5

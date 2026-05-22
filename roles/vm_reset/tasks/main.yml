@@ -1,0 +1,75 @@
+---
+- name: Confirm the snapshot exists
+  ansible.builtin.uri:
+    url: "https://{{ proxmox_api_host }}:8006/api2/json/nodes/{{ proxmox_node }}/qemu/{{ proxmox_vmid }}/snapshot"
+    method: GET
+    validate_certs: "{{ proxmox_validate_certs }}"
+    return_content: true
+    status_code: 200
+    headers:
+      Authorization: "PVEAPIToken={{ proxmox_api_user }}!{{ proxmox_api_token_id }}={{ proxmox_api_token_secret }}"
+  register: vm_reset_snap_list
+  delegate_to: localhost
+  when: proxmox_api_token_id | length > 0
+
+- name: Assert snapshot is present
+  ansible.builtin.assert:
+    that:
+      - vm_snapshot_name in (vm_reset_snap_list.json.data | map(attribute='name') | list)
+    fail_msg: >-
+      Snapshot '{{ vm_snapshot_name }}' does not exist on VM
+      {{ proxmox_vmid }}. Run `zptv provision` first.
+  when:
+    - vm_reset_snap_list is defined
+    - vm_reset_snap_list.json is defined
+
+- name: Stop the test VM
+  community.general.proxmox_kvm:
+    api_host: "{{ proxmox_api_host }}"
+    api_user: "{{ proxmox_api_user }}"
+    api_password: "{{ proxmox_api_password | default(omit) }}"
+    api_token_id: "{{ proxmox_api_token_id | default(omit) }}"
+    api_token_secret: "{{ proxmox_api_token_secret | default(omit) }}"
+    validate_certs: "{{ proxmox_validate_certs }}"
+    node: "{{ proxmox_node }}"
+    vmid: "{{ proxmox_vmid }}"
+    state: stopped
+    force: true
+    timeout: 120
+  delegate_to: localhost
+
+- name: Roll back to the 'fresh' snapshot
+  community.general.proxmox_snap:
+    api_host: "{{ proxmox_api_host }}"
+    api_user: "{{ proxmox_api_user }}"
+    api_password: "{{ proxmox_api_password | default(omit) }}"
+    api_token_id: "{{ proxmox_api_token_id | default(omit) }}"
+    api_token_secret: "{{ proxmox_api_token_secret | default(omit) }}"
+    validate_certs: "{{ proxmox_validate_certs }}"
+    node: "{{ proxmox_node }}"
+    vmid: "{{ proxmox_vmid }}"
+    snapname: "{{ vm_snapshot_name }}"
+    state: rollback
+  delegate_to: localhost
+
+- name: Start the test VM
+  community.general.proxmox_kvm:
+    api_host: "{{ proxmox_api_host }}"
+    api_user: "{{ proxmox_api_user }}"
+    api_password: "{{ proxmox_api_password | default(omit) }}"
+    api_token_id: "{{ proxmox_api_token_id | default(omit) }}"
+    api_token_secret: "{{ proxmox_api_token_secret | default(omit) }}"
+    validate_certs: "{{ proxmox_validate_certs }}"
+    node: "{{ proxmox_node }}"
+    vmid: "{{ proxmox_vmid }}"
+    state: started
+  delegate_to: localhost
+
+- name: Wait for SSH on the rolled-back VM
+  ansible.builtin.wait_for:
+    host: "{{ vm_ip }}"
+    port: 22
+    delay: "{{ vm_reset_ssh_delay }}"
+    timeout: "{{ vm_reset_ssh_timeout }}"
+    state: started
+  delegate_to: localhost
